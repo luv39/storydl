@@ -3,7 +3,6 @@
 
 import re
 import requests
-import codecs
 import time
 import random
 
@@ -12,12 +11,13 @@ def getHtmlText(url):
 
     get html and return
     '''
-    kv = {'User-Agent':'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0'}
+    key={'User-Agent':'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0'}
     try:
-        r = requests.get(url, timeout=30, headers=kv)
+        r = requests.get(url, timeout=30, headers=key)
         r.raise_for_status()
         r.encoding = r.apparent_encoding
-        return r.text
+        text = r.text.encode('utf-8')
+        return text
     except:
         return 404
 
@@ -30,6 +30,7 @@ def getText(url, trytime=3):
         text = getHtmlText(url)
         if text != 404:
             break
+        time.sleep(1)
 
     return text
 
@@ -43,7 +44,7 @@ def findStoryName(text):
         return 404
     storyname = re.findall('<h1>(.*?)</h1>', text)
     if len(storyname) == 0:
-        print '没有找到小说名,请确认输入了正确的URL'
+        print '没有找到小说名,请确认输入了正确的URL fail'
         return 404
     print storyname[0] + ' start download'
     return storyname[0]
@@ -54,11 +55,11 @@ def findMulu(text):
     get dir from the html. if get failed, it will return 404
     '''
     if text == 404:
-        print '网络错误'
+        print '网络错误 fail'
         return 404
     mulu = re.findall('<dd><a href="(.*?)">', text)
     if len(mulu) == 0:
-        print '没有找到目录,请确认输入了正确的URL'
+        print '没有找到目录,请确认输入了正确的URL fail'
         return 404
     return mulu
 
@@ -70,7 +71,7 @@ def findTitle(text):
     try:
         title = re.findall('<h1>(.*?)</h1>', text)[0]
     except:
-        print "未找到title"
+        print "未找到title fail"
         return 404
     return title
 
@@ -82,7 +83,7 @@ def findStory(text):
     try:
         story = re.findall('<div id="content">(.*?)</div>', text, re.S)[0]
     except:
-        print "未找到正文"
+        print "未找到正文 fail"
         return 404
     story = re.findall('(.*?)<br/>', story)
     return story
@@ -93,10 +94,11 @@ def writeFile(hang, storyname):
     creat a file named storyname and write hang in it
     '''
     storyname = storyname + '.txt'
-    f = codecs.open(storyname, "a", "utf-8")
-    f.write(hang + "\n")
-    f.close()
 
+    f = open(storyname, 'a')
+    f.write(hang + '\n')
+    f.close()
+    
 def storyDownload(url):
     '''storyDownload(url)
 
@@ -133,8 +135,8 @@ def storyDownload(url):
         for hang in story:
             writeFile(hang, storyname)
         print title + ' pass'
-        timedelay = random.randint(1, 3)
-        time.sleep(timedelay)
+        #timedelay = random.randint(1, 3)
+        #time.sleep(timedelay)
 
 
 if __name__ == '__main__':
