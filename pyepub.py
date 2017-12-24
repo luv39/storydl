@@ -151,7 +151,7 @@ def creatContent(storyname):
         writeFile('%s/OEBPS/content.opf'%storyname, line)
     writeFile('%s/OEBPS/content.opf'%storyname, '<item href="stylesheet.css" id="css" media-type="text/css"/>')
     writeFile('%s/OEBPS/content.opf'%storyname, '<item href="toc.ncx" media-type="application/x-dtbncx+xml" id="ncx"/>')
-    writeFile('%s/OEBPS/content.opf'%storyname, '<item href="homepage.jpg" id="homepage" media-type="image/jpeg"/>')
+    writeFile('%s/OEBPS/content.opf'%storyname, '<item href="cover.jpg" id="cover" media-type="jpeg"/>')
     writeFile('%s/OEBPS/content.opf'%storyname, '</manifest>')
 
     writeFile('%s/OEBPS/content.opf'%storyname, '<spine toc="ncx">')
@@ -159,7 +159,7 @@ def creatContent(storyname):
     spine = f.readlines()
     for line in spine:
         writeFile('%s/OEBPS/content.opf' % storyname, line)
-    writeFile('%s/OEBPS/content.opf'%storyname, '</spine><guide><reference href="homepage.jpg" type="cover" title="封面"/></guide></package>')
+    writeFile('%s/OEBPS/content.opf'%storyname, '</spine><guide><reference href="cover.jpg" type="cover" title="封面"/></guide></package>')
 
     removeFile('%s/manifest' % storyname)
     removeFile('%s/metadata' % storyname)
