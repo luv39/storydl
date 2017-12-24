@@ -56,7 +56,7 @@ def findHomePage(storyname, text):
     except:
         return 404
     r = requests.get(homepageurl)
-    f = open('%s/OEBPS/homepage.jpg'%storyname, 'wb')
+    f = open('%s/OEBPS/cover.jpg'%storyname, 'wb')
     f.write(r.content)
     f.close()
 
