@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! python
 #-*- coding:utf-8 -*-
 
 import re
@@ -30,7 +30,6 @@ def getText(url, trytime=3):
         text = getHtmlText(url)
         if text != 404:
             break
-        time.sleep(1)
 
     return text
 
@@ -40,13 +39,13 @@ def findStoryName(text):
     get story name and return it, if failed, return 404
     '''
     if text == 404:
-        print '网络错误'
+        print ('网络错误')
         return 404
-    storyname = re.findall('<h1>(.*?)</h1>', text)
+    storyname = re.findall(r'<h1>(.*?)</h1>', text)
     if len(storyname) == 0:
-        print '没有找到小说名,请确认输入了正确的URL fail'
+        print ('没有找到小说名,请确认输入了正确的URL fail')
         return 404
-    print storyname[0] + ' start download'
+    print (storyname[0] + ' start download')
     return storyname[0]
 
 def findMulu(text):
@@ -55,11 +54,11 @@ def findMulu(text):
     get dir from the html. if get failed, it will return 404
     '''
     if text == 404:
-        print '网络错误 fail'
+        print ('网络错误 fail')
         return 404
     mulu = re.findall('<dd><a href="(.*?)">', text)
     if len(mulu) == 0:
-        print '没有找到目录,请确认输入了正确的URL fail'
+        print ('没有找到目录,请确认输入了正确的URL fail')
         return 404
     return mulu
 
@@ -69,9 +68,9 @@ def findTitle(text):
     find title in text
     '''
     try:
-        title = re.findall('<h1>(.*?)</h1>', text)[0]
+        title = re.findall('<h1>(.*?)</h1>', text)[0] + '\n'
     except:
-        print "未找到title fail"
+        print ("未找到title fail")
         return 404
     return title
 
@@ -83,7 +82,7 @@ def findStory(text):
     try:
         story = re.findall('<div id="content">(.*?)</div>', text, re.S)[0]
     except:
-        print "未找到正文 fail"
+        print ("未找到正文 fail")
         return 404
     story = re.findall('(.*?)<br/>', story)
     return story
@@ -108,33 +107,33 @@ def storyDownload(url):
 
     storyname = findStoryName(main_text)
     if storyname == 404:
-        print 'task ' + url + ' download fail'
+        print ('task ' + url + ' download fail')
         return 404
 
     mulu_urls = findMulu(main_text)
 
     if mulu_urls == 404:
-        print storyname + " download fail"
+        print (storyname + " download fail")
         return 404
 
     for mulu_url in mulu_urls:
         text = getText(mulu_url)
         if text == 404:
-            print mulu_url + ' connect fail'
+            print (mulu_url + ' connect fail')
             continue
 
         title = findTitle(text)
         if title == 404:
-            print mulu_url + " download fail"
+            print (mulu_url + " download fail")
             continue
         story = findStory(text)
         if story == 404:
-            print mulu_url + " download fail"
+            print (mulu_url + " download fail")
             continue
         writeFile(title, storyname)
         for hang in story:
             writeFile(hang, storyname)
-        print title + ' pass'
+        print (title + ' pass')
         #timedelay = random.randint(1, 3)
         #time.sleep(timedelay)
 
