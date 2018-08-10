@@ -1,10 +1,17 @@
 #! python
 #-*- coding:utf-8 -*-
 
-import re
-import requests
-import time
-import random
+import re, requests, time, random, sys, getopt, lxml
+from bs4 import BeautifulSoup
+from prettytable import PrettyTable, ALL
+
+sys.setrecursionlimit(1000000)  # 设置递归最大深度
+
+help_file = '''
+-h, --help: help file
+-s, --search: 需要寻找的小说的关键字
+-d, --download: 需要下载小说的链接
+'''
 
 def getHtmlText(url):
     '''getHtmlText(url)
@@ -32,59 +39,66 @@ def getText(url, trytime=3):
 
     return text
 
-def findStoryName(text):
+def search_story(searchkey):
+    search_res_list = {'biquge5200': {'search_url': 'https://www.biquge5200.cc/modules/article/search.php?searchkey='}}
+    for keys, search_res in search_res_list.items():
+        search_url = search_res.get('search_url') + searchkey
+        search_result = getText(search_url)
+        print(keys)
+        search_result = BeautifulSoup(search_result, 'lxml').table
+        story_list = search_result.find_all('tr')
+        table2 = PrettyTable(header=False, hrules=ALL)
+        i = 0
+        for story in story_list:
+            table_line_soup = story.find_all(['th', 'td'])
+            story_table = []
+            for table_line in table_line_soup:
+                story_table.append(table_line.string[:6])
+            if i == 1:
+                story_table.append(story.find_all('a')[0].get('href', default='链接'))
+            else:
+                story_table.append('链接')
+            table2.add_row(story_table)
+            i = 1
+        print(table2)
+
+def find_name_and_mulu(text):
     '''findStoryName(text)
 
     get story name and return it, if failed, return 404
     '''
     if text == 404:
         print ('网络错误')
-        return 404
-    storyname = re.findall('<h1>(.*?)</h1>', text)
-    if len(storyname) == 0:
-        print ('没有找到小说名,请确认输入了正确的URL fail')
-        return 404
-    print (storyname[0] + ' start download')
-    return storyname[0]
+        return 404, 404
+    try:
+        story_name = BeautifulSoup(text, 'lxml').h1.string
+        mulu_urls = []
+        for sibling in BeautifulSoup(text, 'lxml').dl.div.next_siblings:
+            if sibling.name != 'dd':
+                continue
+            mulu_urls.append(sibling.a.get('href'))
+    except:
+        return 404, 404
+    return story_name, mulu_urls
 
-def findMulu(text):
-    '''findMulu(url)
-
-    get dir from the html. if get failed, it will return 404
-    '''
-    if text == 404:
-        print ('网络错误 fail')
-        return 404
-    mulu = re.findall('<dd><a href="(.*?)">', text)
-    if len(mulu) == 0:
-        print ('没有找到目录,请确认输入了正确的URL fail')
-        return 404
-    return mulu
-
-def findTitle(text):
+def find_title_and_story(text):
     '''findTitle(text)
 
     find title in text
     '''
     try:
-        title = re.findall('<h1>(.*?)</h1>', text)[0] + '\n'
+        title = BeautifulSoup(text, 'lxml').h1.string
+        story = []
+        soup = BeautifulSoup(text, 'lxml').body
+        div_list = soup.find_all('div')
+        for div in div_list:
+            if div.get('id') == 'content':
+                for hang in div.find_all('p'):
+                    story.append(hang.string)
     except:
         print ("未找到title fail")
-        return 404
-    return title
-
-def findStory(text):
-    '''findStory(text)
-
-    find story in text and return it, if failed, return 404
-    '''
-    try:
-        story = re.findall('<div id="content">(.*?)</div>', text, re.S)[0]
-    except:
-        print ("未找到正文 fail")
-        return 404
-    story = re.findall('(.*?)<br/>', story)
-    return story
+        return 404, 404
+    return title, story
 
 def writeFile(hang, storyname):
     '''writeFile(hang, storyname)
@@ -104,45 +118,43 @@ def storyDownload(url):
     '''
     main_text = getText(url)
 
-    storyname = findStoryName(main_text)
-    if storyname == 404:
+    story_name, mulu_urls = find_name_and_mulu(main_text)
+    if story_name == 404:
         print ('task ' + url + ' download fail')
         return 404
-
-    mulu_urls = findMulu(main_text)
-
-    if mulu_urls == 404:
-        print (storyname + " download fail")
-        return 404
-
+    print(story_name + 'start download')
     for mulu_url in mulu_urls:
         text = getText(mulu_url)
         if text == 404:
             print (mulu_url + ' connect fail')
             continue
 
-        title = findTitle(text)
+        title, story = find_title_and_story(text)
         if title == 404:
             print (mulu_url + " download fail")
             continue
-        story = findStory(text)
-        if story == 404:
-            print (mulu_url + " download fail")
-            continue
-        writeFile(title, storyname)
+        writeFile(title, story_name)
         for hang in story:
-            writeFile(hang, storyname)
-        print (title + ' pass')
+            writeFile(hang, story_name)
+        print(title + ' pass')
+    print(story_name+'下载完成')
         #timedelay = random.randint(1, 3)
         #time.sleep(timedelay)
 
 
 if __name__ == '__main__':
-    f = open('storydl.config', 'r')
-    urls = f.readlines()
-    f.close()
-
-    for url in urls:
-        mark = storyDownload(url)
-        if mark == 404:
-            continue
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'hs:d:', ['help', 'search=', 'download='])
+    except getopt.GetoptError:
+        print(help_file)
+        sys.exit()
+    for opt_name, opt_value in opts:
+        if opt_name in ('-h', '--help'):
+            print(help_file)
+            sys.exit()
+        if opt_name in ('-s', '--search'):
+            search_story(opt_value)
+            sys.exit()
+        if opt_name in ('-d', '--download'):
+            storyDownload(opt_value)
+            sys.exit()
