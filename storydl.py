@@ -15,8 +15,7 @@ def getHtmlText(url):
     try:
         r = requests.get(url, timeout=30, headers=key)
         r.raise_for_status()
-        r.encoding = r.apparent_encoding
-        text = r.text.encode('utf-8')
+        text = r.text
         return text
     except:
         return 404
@@ -41,7 +40,7 @@ def findStoryName(text):
     if text == 404:
         print ('网络错误')
         return 404
-    storyname = re.findall(r'<h1>(.*?)</h1>', text)
+    storyname = re.findall('<h1>(.*?)</h1>', text)
     if len(storyname) == 0:
         print ('没有找到小说名,请确认输入了正确的URL fail')
         return 404
@@ -147,5 +146,3 @@ if __name__ == '__main__':
         mark = storyDownload(url)
         if mark == 404:
             continue
-
-
