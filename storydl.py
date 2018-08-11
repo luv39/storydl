@@ -1,4 +1,4 @@
-#! python
+
 #-*- coding:utf-8 -*-
 
 import re, requests, time, random, sys, getopt, lxml
@@ -23,9 +23,9 @@ def getHtmlText(url):
         r = requests.get(url, timeout=30, headers=key)
         r.raise_for_status()
         text = r.text
-        return text
     except:
-        return 404
+        text = 404
+    return text
 
 def getText(url, trytime=3):
     '''getText(url, trytime=3)
@@ -100,15 +100,17 @@ def find_title_and_story(text):
         return 404, 404
     return title, story
 
-def writeFile(hang, storyname):
-    '''writeFile(hang, storyname)
+def writeFile(hang, filename):
+    '''writeFile(hang, filename)
 
     creat a file named storyname and write hang in it
     '''
-    storyname = storyname + '.txt'
 
-    f = open(storyname, 'a')
-    f.write(hang + '\n')
+    f = open(filename, 'a')
+    try:
+        f.write(hang + '\n')
+    except:
+        pass
     f.close()
     
 def storyDownload(url):
@@ -116,6 +118,14 @@ def storyDownload(url):
 
     download story and save it
     '''
+    try:
+        f = open('downloaded_url.tmp', 'r')
+    except:
+        f = open('downloaded_url.tmp', 'w+')
+        f.write('please dont delete this file\n')
+    downloaded_url = f.readlines()
+    f.close()
+
     main_text = getText(url)
 
     story_name, mulu_urls = find_name_and_mulu(main_text)
@@ -124,6 +134,8 @@ def storyDownload(url):
         return 404
     print(story_name + 'start download')
     for mulu_url in mulu_urls:
+        if mulu_url+'\n' in downloaded_url:
+            continue
         text = getText(mulu_url)
         if text == 404:
             print (mulu_url + ' connect fail')
@@ -133,13 +145,27 @@ def storyDownload(url):
         if title == 404:
             print (mulu_url + " download fail")
             continue
-        writeFile(title, story_name)
+        writeFile(title, story_name+'.txt')
         for hang in story:
-            writeFile(hang, story_name)
+            writeFile(hang, story_name + '.txt')
+        writeFile(mulu_url, 'downloaded_url.tmp')
         print(title + ' pass')
-    print(story_name+'下载完成')
-        #timedelay = random.randint(1, 3)
-        #time.sleep(timedelay)
+    print(story_name + '下载完成')
+    try:
+        f2 = open('downloaded_url.tmp', 'r')
+    except:
+        pass
+    downloaded_url2s = f2.readlines()
+    f2.close()
+    for mulu_url in mulu_urls:
+        if mulu_url+'\n' in downloaded_url2s:
+            downloaded_url2s.remove(mulu_url+'\n')
+
+    f3 = open('downloaded_url.tmp', 'w')
+    for downloaded_url2 in downloaded_url2s:
+        f3.write(downloaded_url2)
+    f3.close()
+
 
 
 if __name__ == '__main__':
